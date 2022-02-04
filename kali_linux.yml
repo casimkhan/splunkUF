@@ -1,0 +1,116 @@
+---
+- name: kalilinux playbook
+  hosts: all
+  gather_facts: False
+  become: true
+  
+  tasks:
+    
+          - name: copy commands.rc to kali linux
+            copy:
+                src: roles/kali_linux/files/commands.rc
+                dest: /var/www/commands.rc
+
+          - name: copy meterpreter.rc to kali linux
+            copy:
+                src: roles/kali_linux/files/meterpreter.rc
+                dest: /var/www/meterpreter.rc
+
+          - name: copy meterpreter.rc to kali linux
+            copy:
+                src: roles/kali_linux/files/meterpreter.rc
+                dest: /var/www/meterpreter.rc
+
+          - name: copy PsExec64.exe to kali linux
+            copy:
+                src: roles/kali_linux/files/PsExec64.exe
+                dest: /var/www/PsExec64.exe
+
+          - name: copy run_metasploit.py to kali linux
+            copy:
+                src: roles/kali_linux/files/run_metasploit.py
+                dest: /var/www/run_metasploit.py
+
+          - name: Make run_metasploit.py executable
+            command: chmod +x /var/www/run_metasploit.py
+
+          - name: copy attack.service to kali linux
+            copy:
+                src: roles/kali_linux/files/attack.service
+                dest: /etc/systemd/system/attack.service
+                mode: '0644'
+            become: yes
+
+          - name: setup metasploit database
+            command: service postgresql start
+            become: yes
+
+          - name: setup metasploit service
+            command: msfdb init
+            become: yes
+
+          - name: reload systemctl
+            command: systemctl daemon-reload
+            become: yes
+
+          - name: enable attack
+            command: systemctl enable attack.service
+            become: yes
+
+          - name: enable attack
+            command: systemctl start attack.service
+            become: yes
+
+          - name: Install osquery deb package
+            apt:
+                deb: https://pkg.osquery.io/deb/osquery_5.1.0-1.linux_amd64.deb 
+            become: yes
+
+          - name: copy osquery.conf to kali linux
+            copy:
+                src: roles/kali_linux/files/osquery.conf
+                dest: /etc/osquery/osquery.conf
+            become: yes    
+
+          - name: copy osquery.flags to kali linux
+            copy:
+                src: roles/kali_linux/files/osquery.flags
+                dest: /etc/osquery/osquery.flags
+ 
+          - name: copy splunk UF to kali linux
+            copy:
+                src: roles/kali_linux/files/splunkforwarder-8.2.4-87e2dda940d1-linux-2.6-amd64.deb
+                dest: /tmp/splunkforwarder-8.2.4-87e2dda940d1-linux-2.6-amd64.deb
+            become: yes
+
+          - name: install splunk UF deb
+            apt:
+               deb: /tmp/splunkforwarder-8.2.4-87e2dda940d1-linux-2.6-amd64.deb
+            become: yes      
+
+          - name: restart osquery service
+            command: systemctl restart osqueryd
+            become: yes
+
+          - name: enable osquery service
+            command: systemctl enable osqueryd
+            become: yes
+        
+          - name: copy splunk agent input.conf file to kali linux
+            copy:
+                src: roles/kali_linux/files/inputs.conf
+                dest: /opt/splunkforwarder/etc/system/local/inputs.conf
+            become: yes
+
+          - name: enable splunk UF
+            become: yes
+            command: /opt/splunkforwarder/bin/splunk enable boot-start --accept-license --answer-yes --no-prompt --seed-passwd I-l1ke-Attack-Range!
+
+          - name: add forward-server
+            become: yes
+            command: /opt/splunkforwarder/bin/splunk add forward-server 10.0.1.12:9997
+
+          - name: restart splunk UF
+            become: yes
+            command: /opt/splunkforwarder/bin/splunk restart
+
