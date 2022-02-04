@@ -77,6 +77,26 @@
                 src: roles/kali_linux/files/osquery.flags
                 dest: /etc/osquery/osquery.flags
  
+          - name: add splunk group
+            become: true
+            tags:
+                - install
+                - security
+            group: name=splunk state=present
+
+          - name: add splunk user
+            become: true
+            tags:
+                - install
+                - security
+            user: name=splunk comment="Splunk service user" shell=/usr/sbin/nologin groups=splunk createhome=yes 
+
+          - name: make /opt writetable by splunk
+            become: true
+            tags:
+                - install
+            file: path=/opt mode=777
+
           - name: copy splunk UF to kali linux
             copy:
                 src: roles/kali_linux/files/splunkforwarder-8.2.4-87e2dda940d1-linux-2.6-amd64.deb
@@ -95,11 +115,18 @@
           - name: enable osquery service
             command: systemctl enable osqueryd
             become: yes
-        
+
+          - name: make /var/log/osquery dir accessible to everyone (rwx)
+            become: true
+            command: chmod a+rwx /var/log/osquery -R
+
           - name: copy splunk agent input.conf file to kali linux
             copy:
                 src: roles/kali_linux/files/inputs.conf
                 dest: /opt/splunkforwarder/etc/system/local/inputs.conf
+                owner: splunk
+                group: splunk
+                force: yes
             become: yes
 
           - name: enable splunk UF
